@@ -8,27 +8,12 @@
 #'
 #' @export
 #'
-#' @importFrom lubridate floor_date
-#' @importFrom lubridate %m+%
-#' @importFrom dplyr group_by
-#' @importFrom dplyr summarise
-#' @importFrom dplyr mutate
-#' @importFrom dplyr rename
-#' @importFrom dplyr "%>%"
-#' @importFrom ggplot2 ggplot
-#' @importFrom ggplot2 aes
-#' @importFrom ggplot2 geom_line
-#' @importFrom ggplot2 geom_point
-#' @importFrom ggplot2 theme
-#' @importFrom ggplot2 element_blank
-#' @importFrom ggplot2 theme_light
-#' @importFrom ggplot2 scale_y_continuous
-#' @importFrom ggplot2 labs
-#' @importFrom ggplot2 scale_x_date
-#' @importFrom ggplot2 stat_smooth
-#' @importFrom scales dollar_format
-#' @importFrom rlang .data
-
+#' @import lubridate
+#' @import dplyr
+#' @import ggplot2
+#' @import scales
+#' @import rlang
+#'
 hist_plot <- function(short_ledger, time_key, savings){
 
   my_colors <- c("Income" = "#77DD76",
