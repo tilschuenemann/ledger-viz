@@ -47,5 +47,11 @@ net_plot <- function(ledger, time_key) {
                                                       big.mark = ".",
                                                       decimal.mark = ","))
 
+  switch (time_key,
+          year = {net_plot <- net_plot+ scale_x_date(date_labels = "%Y", date_breaks = "1 year")},
+          quarter = {net_plot <- net_plot+scale_x_date(date_labels = "%Y %b", date_breaks = "1 month")},
+          month = {net_plot <- net_plot+scale_x_date(date_labels = "%Y %b", date_breaks = "1 month")}
+  )
+
   return(net_plot)
 }

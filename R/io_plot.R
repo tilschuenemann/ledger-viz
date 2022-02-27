@@ -44,8 +44,8 @@ io_plot <- function(ledger, time_key){
 
   switch (time_key,
           year = {io_plot <- io_plot+ scale_x_date(date_labels = "%Y", date_breaks = "1 year")},
-          quarter = {io_plot <- io_plot+scale_x_date(date_labels = "%b", date_breaks = "1 month")},
-          month = {io_plot <- io_plot+scale_x_date(date_labels = "%b", date_breaks = "1 month")}
+          quarter = {io_plot <- io_plot+scale_x_date(date_labels = "%Y %b", date_breaks = "1 month")},
+          month = {io_plot <- io_plot+scale_x_date(date_labels = "%Y %b", date_breaks = "1 month")}
   )
 
   return(io_plot)
