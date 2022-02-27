@@ -11,18 +11,19 @@
 #'
 balance_plot <- function(ledger){
 
-  # TODO nuding is absolute, should be calculated
+  # TODO nudging is absolute, should be calculated
   # also x axis labels might be bad for some months
   # TODO title
 
   balance_data <- ledger %>%
     group_by(date) %>%
-    summarise(balance_avg = mean(balance))
+    summarise(balance_avg = min(balance))
 
   first_label <- balance_data %>% slice(which.min(.data$date))
   last_label <- balance_data %>% slice(which.max(.data$date))
 
-  balance_plot <- ggplot(balance_data, aes(date,balance_avg,label = dollar(.data$balance_avg,
+  balance_plot <-
+  ggplot(balance_data, aes(date,balance_avg,label = dollar(.data$balance_avg,
                                                   prefix = "",
                                                   suffix = "\U20AC",
                                                   big.mark = ".",
@@ -30,11 +31,12 @@ balance_plot <- function(ledger){
                                                   accuracy = 1
   )))+
     geom_line()+
-    geom_point(aes(stroke=1))+
+    geom_point()+
     theme_light()+
-    labs(x="",y="",title = "balance for last month")+
+    labs(x="",y="",title = "balance")+
     scale_y_continuous(limits = c(0,NA),labels = scales::dollar_format(prefix = "", suffix = "\U20AC", big.mark = ".", decimal.mark = ","))+
-    scale_x_date(limits=c(start,end))+
+    scale_x_date(limits=c(first_label$date,last_label$date),
+                 date_labels = "%Y %b", date_breaks = "1 month")+
     theme(
       legend.position = "none",
       panel.grid.minor = element_blank(),
