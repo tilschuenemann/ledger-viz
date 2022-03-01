@@ -12,7 +12,7 @@
 #' @import rlang
 #' @import scales
 #'
-top_n_plot <- function(ledger, n=15L, type){
+top_n_plot <- function(ledger, n=10L, type){
 
   my_colors <- c("Income" = "#77DD76",
                  "Expense" = "#FF6962")
@@ -37,7 +37,7 @@ top_n_plot <- function(ledger, n=15L, type){
              amount_abs = abs(amount))
 
 
-    plot_title <- "top 15 income"
+    plot_title <- paste0("top ",n," income")
 
   }
 
