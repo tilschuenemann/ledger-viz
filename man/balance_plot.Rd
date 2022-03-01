@@ -7,7 +7,7 @@
 balance_plot(ledger)
 }
 \arguments{
-\item{ledger}{}
+\item{ledger}{ledger}
 }
 \description{
 Title

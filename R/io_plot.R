@@ -17,7 +17,7 @@ io_plot <- function(ledger, time_key){
   io_data <- ledger %>%
     group_by(.data[[time_key]], .data$type) %>%
     summarise(amount = sum(.data$amount),
-              amount_abs = abs(amount)) %>%
+              amount_abs = abs(.data$amount)) %>%
     mutate(type = ifelse(.data$amount > 0,"Income","Expense"))
 
 

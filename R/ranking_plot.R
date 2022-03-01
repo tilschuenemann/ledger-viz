@@ -1,9 +1,8 @@
 
 #' Title
 #'
-#' @param wide_ledger
-#' @param key
-#' @param months
+#' @param ledger ledger
+#' @param cat_key cat_key
 #'
 #' @export
 #'
@@ -12,7 +11,7 @@
 #' @import ggplot2
 #' @import scales
 #' @import rlang
-#'
+#' @importFrom stats reorder
 ranking_plot <- function(ledger, cat_key) {
 
 
@@ -35,7 +34,7 @@ ranking_plot <- function(ledger, cat_key) {
                                                           accuracy = 1)))+
     geom_bar(stat="identity")+
     theme_light()+
-    scale_x_continuous(labels = scales::dollar_format(prefix = "",
+    scale_x_continuous(labels = dollar_format(prefix = "",
                                                       suffix = "\U20AC",
                                                       big.mark = ".",
                                                       decimal.mark = ",")) +

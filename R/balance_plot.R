@@ -1,6 +1,6 @@
 #' Title
 #'
-#' @param ledger
+#' @param ledger ledger
 #'
 #' @export
 #'
@@ -17,13 +17,13 @@ balance_plot <- function(ledger){
 
   balance_data <- ledger %>%
     group_by(date) %>%
-    summarise(balance_avg = min(balance))
+    summarise(balance_avg = min(.data$balance))
 
   first_label <- balance_data %>% slice(which.min(.data$date))
   last_label <- balance_data %>% slice(which.max(.data$date))
 
   balance_plot <-
-  ggplot(balance_data, aes(date,balance_avg,label = dollar(.data$balance_avg,
+  ggplot(balance_data, aes(.data$date,.data$balance_avg,label = dollar(.data$balance_avg,
                                                   prefix = "",
                                                   suffix = "\U20AC",
                                                   big.mark = ".",
@@ -43,8 +43,8 @@ balance_plot <- function(ledger){
       panel.background = element_blank(),
       panel.border = element_blank()
     )+
-    geom_label(data=first_label, aes(date,balance_avg),nudge_y = 200)+
-    geom_label(data=last_label, aes(date,balance_avg),nudge_y = 200)
+    geom_label(data=first_label, aes(.data$date,.data$balance_avg),nudge_y = 200)+
+    geom_label(data=last_label, aes(.data$date,.data$balance_avg),nudge_y = 200)
 
   return(balance_plot)
 }

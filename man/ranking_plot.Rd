@@ -7,7 +7,9 @@
 ranking_plot(ledger, cat_key)
 }
 \arguments{
-\item{months}{}
+\item{ledger}{ledger}
+
+\item{cat_key}{cat_key}
 }
 \description{
 Title

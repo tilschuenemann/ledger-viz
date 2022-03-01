@@ -24,7 +24,7 @@ ui <- {
         column(
           width = 4,
           fileInput("fileupload", "File Upload", multiple = F, accept = ".csv"),
-          uiOutput("daterange")
+          uiOutput("daterange"),
         ),
         column(
           width = 2, uiOutput("filter_label1"),
@@ -41,9 +41,9 @@ ui <- {
           uiOutput("filter_recipient_clean_custom"),
           uiOutput("filter_occurence")
         ),
-        column(width = 2, checkboxGroupInput("custom", "Use custom values for:",
-          choices = c("date", "amount", "recipient", "label1", "label2", "label3"),
-        )),
+        column(width = 2,
+               checkboxGroupInput("custom", "Use custom values for:",
+          choices = c("date", "amount", "recipient", "label1", "label2", "label3"))),
         column(
           width = 2,
           checkboxInput("calculate_subscription", "Distribute subscription")
@@ -60,27 +60,20 @@ ui <- {
         collapsible = T,
         plotOutput("net_plot"),
         plotOutput("io_plot"),
-        plotOutput("balance_plot")
-      ),
-      box(
-        title = "Last Month",
-        status = "primary",
-        solidHeader = T,
-        width = 12,
-        collapsible = T,
-        uiOutput("month_picker"),
-        plotOutput("m_balance"),
-        column(
-          width = 6,
-          plotOutput("m_tope"),
-          plotOutput("m_net"),
-          plotOutput("m_io")
+        plotOutput("balance_plot"),
+        fluidRow(column(width = 4,
+                        plotOutput("rank_label1")),
+                 column(width = 4,
+                        plotOutput("rank_label2")),
+                 column(width = 4,
+                        plotOutput("rank_label3"))
         ),
-        column(
-          width = 6,
-          plotOutput("m_topi"),
-          plotOutput("m_rank_label2"),
-          plotOutput("m_rank_label1")
+        fluidRow(column(width = 4,
+                        plotOutput("top_expenses")),
+                 column(width = 4,
+                        plotOutput("top_income")),
+                 column(width = 4,
+                        )
         )
       )
     )))
@@ -91,191 +84,35 @@ ui <- {
 }
 
 server <- function(input, output, session) {
+
   observeEvent(input$fileupload, {
     shinyjs::show("contents")
   })
 
-  data_raw <- reactive({
-    l_file <- input$fileupload
-    req(l_file)
+  # base data used for creating filters after data manipulation
+  base_data <- reactive({
+    req(input$fileupload)
 
-    suppressWarnings({
-      ledger <- read_delim(l_file$datapath,
-        ";",
-        escape_double = FALSE, locale = locale(encoding = "UTF-8", decimal_mark = ","),
-        trim_ws = TRUE, col_types = cols()
-      )
-    })
-
-
-    ledger <- ledger %>%
-      mutate(date = as.Date(date, format = "%d.%m.%Y"))
-
-    return(ledger)
-  })
-
-  data_dis <- reactive({
-    req(data_raw())
-
-    ledger <- data_raw()
+    ledger <- read_data(input$fileupload)
 
     if (input$calculate_subscription) {
-      # rows with occurence other than 0 get repeated
-      # amount is split by occurence
-      # dates will be set to the future occurences
-      rest <- ledger[ledger$occurence == 0, ]
-      change <- ledger[ledger$occurence != 0, ]
-
-      change <- change %>%
-        mutate(amount = amount / occurence)
-
-      date_v <- as.Date(NULL)
-
-      for (i in 1:nrow(change)) {
-        tmp_date <- seq(change[i, ]$date,
-          by = "month",
-          length.out = as.numeric(change[i, ]$occurence)
-        )
-        date_v <- c(date_v, tmp_date)
-      }
-
-      result <- data.frame(lapply(change, rep, change$occurence)) %>%
-        mutate(
-          occurence = 0,
-          balance = NA
-        )
-
-      result$date <- date_v
-
-      ledger <- rbind(rest, result)
-
-      ledger <- ledger %>%
-        mutate(date = ymd(date))
+      ledger <- data_distribute_sub(ledger)
     }
+
+    ledger <- data_coalesce(ledger, input$custom)
 
     return(ledger)
   })
 
+  # filtered data for plotting
+  filtered_data <- reactive({
+    # TODO using eval + parse is bad
+    # TODO  create more elegant solution
 
-
-  # filters -----------------------------------------------------------------
-
-  # create filters ui from uploaded ledger
-  # function for creating UI element; creating unique choices from ledger column
-
-  create_select <- function(ledger, arg) {
-    id <- paste0("filter_", arg)
-    return(selectInput(id,
-      arg,
-      choices = sort(as.vector(unique(ledger[[arg]]))),
-      multiple = T
-    ))
-  }
-
-  output$filter_label1 <- renderUI({
-    create_select(data_raw(), "label1")
-  })
-  output$filter_label2 <- renderUI({
-    create_select(data_raw(), "label2")
-  })
-  output$filter_label3 <- renderUI({
-    create_select(data_raw(), "label3")
-  })
-  output$filter_label1_custom <- renderUI({
-    create_select(data_raw(), "label1_custom")
-  })
-  output$filter_label2_custom <- renderUI({
-    create_select(data_raw(), "label2_custom")
-  })
-  output$filter_label3_custom <- renderUI({
-    create_select(data_raw(), "label3_custom")
-  })
-  output$filter_recipient_clean <- renderUI({
-    create_select(data_raw(), "recipient_clean")
-  })
-  output$filter_recipient_clean_custom <- renderUI({
-    create_select(data_raw(), "recipient_clean_custom")
-  })
-  output$filter_recipient <- renderUI({
-    create_select(data_raw(), "recipient")
-  })
-  output$filter_occurence <- renderUI({
-    create_select(data_raw(), "occurence")
-  })
-
-  output$daterange <- renderUI({
-    req(data_raw())
-
-    ledger <- data_raw()
-
-    start_date <- min(as.Date(ledger$date, format = "%d.%m.%Y"))
-    end_date <- max(as.Date(ledger$date, format = "%d.%m.%Y")) %m+% months(12)
-
-    dateRangeInput(
-      inputId = "daterange",
-      label = "Date Range",
-      start = start_date,
-      end = end_date,
-      weekstart = 6
-    )
-  })
-
-  output$month_picker <- renderUI({
-    req(data_coal())
-
-    choices <- data_coal()$month %>%
-      unique() %>%
-      sort()
-
-    names(choices) <- data_coal()$month %>%
-      unique() %>%
-      sort() %>%
-      format("%Y %B")
-
-
-    selectInput("month_picker", "Select month to review",
-      choices = choices,
-      selected = 1,
-      width = "20%"
-    )
-  })
-
-
-  # coalesce data -----------------------------------------------------------
-
-  # coalesces all columns which have been checked in input$custom
-  # after that columns relying on date get calculated
-
-  data_coal <- reactive({
-    req(data_dis())
-
-    coalesce_ledger <- function(ledger, custom_input) {
-      if (length(custom_input) != 0) {
-        for (i in 1:length(custom_input)) {
-          arg <- custom_input[i]
-          custom_arg <- paste0(arg, "_custom")
-          ledger <- ledger %>%
-            mutate(!!arg := coalesce(ledger[[custom_arg]], ledger[[arg]]))
-        }
-      }
-      return(ledger)
-    }
-
-    ledger <- coalesce_ledger(data_dis(), input$custom) %>%
-      mutate(
-        month = floor_date(date, "month"),
-        quarter = floor_date(date, "quarter"),
-        year = floor_date(date, "year")
-      )
-
-    return(ledger)
-  })
-
-  # filter data -------------------------------------------------------------
-
-  data_fil <- reactive({
-    req(data_coal())
+    req(base_data())
     req(input$daterange)
+
+    ledger <- base_data()
 
     filter_ledger <- function(ledger, arg) {
       filter_arg <- paste0("filter_", arg)
@@ -288,7 +125,6 @@ server <- function(input, output, session) {
       return(ledger)
     }
 
-    ledger <- data_coal()
     ledger <- filter_ledger(ledger, "label1")
     ledger <- filter_ledger(ledger, "label2")
     ledger <- filter_ledger(ledger, "label3")
@@ -309,77 +145,111 @@ server <- function(input, output, session) {
     return(ledger)
   })
 
+  # filters -----------------------------------------------------------------
+
+  # create filters ui from uploaded ledger
+  # function for creating UI element; creating unique choices from ledger column
+  # TODO this can be done more elegantly
+
+  create_select <- function(ledger, arg) {
+    id <- paste0("filter_", arg)
+    return(selectInput(id,
+      arg,
+      choices = sort(as.vector(unique(ledger[[arg]]))),
+      multiple = T
+    ))
+  }
+
+  output$filter_label1 <- renderUI({
+    create_select(base_data(), "label1")
+  })
+  output$filter_label2 <- renderUI({
+    create_select(base_data(), "label2")
+  })
+  output$filter_label3 <- renderUI({
+    create_select(base_data(), "label3")
+  })
+  output$filter_label1_custom <- renderUI({
+    create_select(base_data(), "label1_custom")
+  })
+  output$filter_label2_custom <- renderUI({
+    create_select(base_data(), "label2_custom")
+  })
+  output$filter_label3_custom <- renderUI({
+    create_select(base_data(), "label3_custom")
+  })
+  output$filter_recipient_clean <- renderUI({
+    create_select(base_data(), "recipient_clean")
+  })
+  output$filter_recipient_clean_custom <- renderUI({
+    create_select(base_data(), "recipient_clean_custom")
+  })
+  output$filter_recipient <- renderUI({
+    create_select(base_data(), "recipient")
+  })
+  output$filter_occurence <- renderUI({
+    create_select(base_data(), "occurence")
+  })
+
+  output$daterange <- renderUI({
+    req(base_data())
+
+    ledger <- base_data()
+
+    start_date <- min(as.Date(ledger$date, format = "%d.%m.%Y"))
+    end_date <- max(as.Date(ledger$date, format = "%d.%m.%Y")) %m+% months(12)
+
+    dateRangeInput(
+      inputId = "daterange",
+      label = "Date Range",
+      start = start_date,
+      end = end_date,
+      weekstart = 6
+    )
+  })
 
   # plot --------------------------------------------------------------------
 
   output$balance_plot <- renderPlot({
-    req(data_fil())
-    balance_plot(data_fil())
+    req(filtered_data())
+    balance_plot(filtered_data())
   })
 
   output$net_plot <- renderPlot({
-    req(data_fil())
-    net_plot(data_fil(), "month")
+    req(filtered_data())
+    net_plot(filtered_data(), "month")
   })
 
   output$io_plot <- renderPlot({
-    req(data_fil())
-    io_plot(data_fil(), "month")
+    req(filtered_data())
+    io_plot(filtered_data(), "month")
   })
 
-  # monthly plots -----------------------------------------------------------
-
-  mondata <- reactive({
-    req(data_fil())
-    req(input$month_picker)
-
-    ledger <- data_fil()
-    ledger <- ledger %>%
-      filter(month == input$month_picker)
-
-    return(ledger)
+  output$rank_label1 <- renderPlot({
+    req(filtered_data())
+    ranking_plot(filtered_data(), "label1")
   })
 
-
-  output$m_net <- renderPlot({
-    req(mondata())
-    net_plot(mondata(), "month")
+  output$rank_label2 <- renderPlot({
+    req(filtered_data())
+    ranking_plot(filtered_data(), "label2")
   })
 
-  output$m_io <- renderPlot({
-    req(mondata())
-    io_plot(mondata(), "month")
+  output$rank_label3 <- renderPlot({
+    req(filtered_data())
+    ranking_plot(filtered_data(), "label3")
   })
 
-  output$dayo <- renderPlot({
-    req(mondata())
-    net_plot(mondata(), "date")
+  output$top_expenses <- renderPlot({
+    req(filtered_data())
+    top_n_plot(filtered_data(), 10L, "Expense")
   })
 
-  output$m_rank_label1 <- renderPlot({
-    req(mondata())
-    ranking_plot(mondata(), "label1")
+  output$top_income <- renderPlot({
+    req(filtered_data())
+    top_n_plot(filtered_data(), 10L, "Income")
   })
 
-  output$m_rank_label2 <- renderPlot({
-    req(mondata())
-    ranking_plot(mondata(), "label2")
-  })
-
-  output$m_tope <- renderPlot({
-    req(mondata())
-    top_n_plot(mondata(), 15L, "Expense")
-  })
-
-  output$m_topi <- renderPlot({
-    req(mondata())
-    top_n_plot(mondata(), 15L, "Income")
-  })
-
-  output$m_balance <- renderPlot({
-    req(mondata())
-    balance_plot(mondata())
-  })
 }
 
 shinyApp(ui, server)

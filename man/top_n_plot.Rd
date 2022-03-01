@@ -4,7 +4,7 @@
 \alias{top_n_plot}
 \title{Title}
 \usage{
-top_n_plot(ledger, n = 15L, type)
+top_n_plot(ledger, n = 10L, type)
 }
 \arguments{
 \item{ledger}{ledger}
@@ -12,9 +12,6 @@ top_n_plot(ledger, n = 15L, type)
 \item{n}{n}
 
 \item{type}{type}
-}
-\value{
-
 }
 \description{
 Title

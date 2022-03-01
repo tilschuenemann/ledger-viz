@@ -4,7 +4,6 @@
 #' @param n n
 #' @param type type
 #'
-#' @return
 #' @export
 #'
 #' @import ggplot2
@@ -22,9 +21,9 @@ top_n_plot <- function(ledger, n=10L, type){
     topn_data <- ledger %>%
       filter(.data$type == "Expense") %>%
       slice_min(.data$amount,n=n) %>%
-      arrange(amount) %>%
-      mutate(recipient_order = paste0(row_number()," ",recipient_clean),
-             amount_abs = abs(amount))
+      arrange(.data$amount) %>%
+      mutate(recipient_order = paste0(row_number()," ",.data$recipient_clean),
+             amount_abs = abs(.data$amount))
 
     plot_title <- "top 15 expenses"
 
@@ -32,16 +31,16 @@ top_n_plot <- function(ledger, n=10L, type){
     topn_data <- ledger %>%
       filter(.data$type == "Income") %>%
       slice_max(.data$amount,n=n) %>%
-      arrange(-amount) %>%
-      mutate(recipient_order = paste0(row_number()," ",recipient_clean),
-             amount_abs = abs(amount))
+      arrange(-.data$amount) %>%
+      mutate(recipient_order = paste0(row_number()," ",.data$recipient_clean),
+             amount_abs = abs(.data$amount))
 
 
     plot_title <- paste0("top ",n," income")
 
   }
 
-  topn_plot <- ggplot(topn_data, aes(amount_abs, reorder(recipient_order, amount_abs),
+  topn_plot <- ggplot(topn_data, aes(.data$amount_abs, reorder(.data$recipient_order, .data$amount_abs),
                                      fill = .data$type,
                                      label = dollar(.data$amount,
                                                     prefix = "", suffix = "\U20AC", big.mark = ".",
